@@ -5,8 +5,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import time
 import json
-from tqdm import tqdm
 import mysql.connector
+from tqdm import tqdm
 
 conn = mysql.connector.connect(
         host='localhost',
@@ -25,30 +25,15 @@ def waitfor(xpth, driver):
         pass
 
 def insert_userdata(response_body):
-    pk_id=response_body['user']['pk_id']
-    full_name=response_body['user']['full_name']
-    is_verified=response_body['user']['is_verified']
-    is_private=response_body['user']['is_private']
-    username=response_body['user']['username']
-    sql_insert_with_param = """REPLACE userdata
-                        (pk_id,full_name,is_verified,is_private,username) 
-                        VALUES (%s, %s, %s, %s, %s);"""
-    data_tuple = (pk_id,full_name,is_verified,is_private,username)
+    username=response_body['data']['user']['username']
+    userdetails=response_body['data']['user']
+    sql_insert_with_param = """REPLACE userdetails
+                        (username,userdetails) 
+                        VALUES (%s, %s);"""
+    data_tuple = (username,json.dumps(userdetails))
     cursor.execute(sql_insert_with_param, data_tuple)
     conn.commit()
     print(data_tuple)
-
-def insert_posts(pk_id,response_body):
-    items=response_body['items']
-    for item in items:
-        code=item['code']
-        sql_insert_with_param = """INSERT IGNORE postdata
-                            (pk_id,postdata,code) 
-                            VALUES (%s, %s, %s);"""
-        data_tuple = (pk_id,json.dumps(item),code)
-        cursor.execute(sql_insert_with_param, data_tuple)
-        conn.commit()
-        print(data_tuple)
 
 def clean_logs(target_url):
     logs = driver.get_log("performance")  
@@ -76,20 +61,18 @@ caps = options.to_capabilities()
 caps['goog:loggingPrefs'] = {'performance': 'ALL'} 
 driver = uc.Chrome(options = options,desired_capabilities=caps) 
 
-driver.get('https://www.instagram.com/larajadephotography/')
+with open("profiletocrawl.json", "r") as fp:
+    b = json.load(fp)
 
-logs=clean_logs('https://www.instagram.com/api/v1/feed/user/')
-response_body=extract_json_from_log(logs,driver)
-pk_id=response_body['user']['pk_id']
-insert_userdata(response_body)
-insert_posts(pk_id,response_body)
-
-while True:
-    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+for username in tqdm(b[1:]):
+    driver.get(f'https://www.instagram.com/{username.split("@")[1]}')
     time.sleep(random.uniform(15,30))
-    logs=clean_logs('https://www.instagram.com/api/v1/feed/user/')
-    response_body=extract_json_from_log(logs,driver)
-    insert_posts(pk_id,response_body)
+    try:
+        logs=clean_logs('https://www.instagram.com/api/v1/users/web_profile_info')
+        response_body=extract_json_from_log(logs,driver)
+        insert_userdata(response_body)
+    except Exception as e:
+        print(e)
 
 conn.close()
 
