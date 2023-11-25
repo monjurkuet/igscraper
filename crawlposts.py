@@ -76,7 +76,7 @@ caps = options.to_capabilities()
 caps['goog:loggingPrefs'] = {'performance': 'ALL'} 
 driver = uc.Chrome(options = options,desired_capabilities=caps) 
 
-driver.get('https://www.instagram.com/larajadephotography/')
+driver.get('https://www.instagram.com/lesmodelesfrancaises/')
 
 logs=clean_logs('https://www.instagram.com/api/v1/feed/user/')
 response_body=extract_json_from_log(logs,driver)
