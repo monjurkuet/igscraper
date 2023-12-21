@@ -76,7 +76,7 @@ caps = options.to_capabilities()
 caps['goog:loggingPrefs'] = {'performance': 'ALL'} 
 driver = uc.Chrome(options = options,desired_capabilities=caps) 
 
-driver.get('https://www.instagram.com/lesmodelesfrancaises/')
+driver.get('https://www.instagram.com/javiercuevasgarcia/')
 
 logs=clean_logs('https://www.instagram.com/api/v1/feed/user/')
 response_body=extract_json_from_log(logs,driver)
@@ -96,3 +96,9 @@ conn.close()
 logs=clean_logs('https://www.instagram.com/api/v1/feed/user/')
 response_body=extract_json_from_log(logs,driver)
 insert_posts(pk_id,response_body)
+while True:
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    time.sleep(random.uniform(15,30))
+    logs=clean_logs('https://www.instagram.com/api/v1/feed/user/')
+    response_body=extract_json_from_log(logs,driver)
+    insert_posts(pk_id,response_body)
